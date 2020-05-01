@@ -1,7 +1,7 @@
 import json
 import os
 import requests 
-from driver import *
+from driver import get_driver
 import pandas as pd
 
 # current directory that this python file is in
