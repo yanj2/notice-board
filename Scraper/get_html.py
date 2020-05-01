@@ -1,6 +1,6 @@
 import requests 
 from urllib3.connection import socket
-from requests import ReadTimeout, ConnectTimeout, HTTPError, Timeout, ConnectionError
+from bs4 import BeautifulSoup
 
 # Static websites will give html. Dynamic ones probbaly javascript to look at
 
@@ -15,4 +15,11 @@ def get_page(url):
 
     return page if page.status_code == requests.codes.ok else f"Unsuccessful HTTP request for {url} with error code: {page.status_code}"
 
-print(get_page(URL).text)
+page = get_page(URL)
+soup = BeautifulSoup(page, 'html-parser')
+
+
+# Boot up the driver 
+# open the link to the deals page
+# search page for deals 
+# if nothing relevant -> open search for predefined or specific tags/words 
