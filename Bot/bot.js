@@ -1,7 +1,9 @@
 var Discord = require('discord.io');
 console.log("successfully connected discord.io");
 var logger = require('winston');
-var auth = require('./auth.json');
+// var auth = require('./auth.json');
+//NOTE: Need to make sure this uses the token from .env 
+require('dotenv').config()
 
 // Configure logger settings
 logger.remove(logger.transports.Console);

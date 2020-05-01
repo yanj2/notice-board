@@ -1,59 +1,43 @@
-from selenium.webdriver import Chrome
-from selenium.common.exceptions import SessionNotCreatedException
 import json
 import os
-import plistlib
-from dotenv import load_dotenv
 import requests 
-from zipfile import ZipFile
-import io
-# import logging 
+from driver import *
+import pandas as pd
 
-load_dotenv()
-
-#Note that getcwd gets the current working dir where python is run from 
-# SITES_PATH = os.getcwd() + "sites.json"
+# current directory that this python file is in
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 SITES_PATH = CURR_DIR + "/sites.json"
-DRIVER_PATH = CURR_DIR + "/chromedriver"
-
-# logger = logging.logger("NoticeBot")
-
-# print(os.path.exists(os.getenv("PATH_TO_CHROME_APP")))
-# Get the current installed Chrome ver by reading the property list file
-pl = plistlib.readPlist(os.getenv("P_LIST_LOC"))
-ver = pl["CFBundleShortVersionString"]
-print(f"Current Version of Chrome: {ver}")
+ignore = ["OUT OF STOCK", "EXPIRED", "CLOSED"]
 
 with open(SITES_PATH) as f:
     sites = json.load(f)
 
-# Try to run the chrome driver, installing any updates if necessary
-try:
-    driver = Chrome(DRIVER_PATH)
-except SessionNotCreatedException as e:
-    print(e)
-    print("Unable to initialise chromedriver")
-finally:
-   
-    # Check for updates 
-    print("Checking for new version of chromedriver")
-    page = requests.get(f"https://chromedriver.storage.googleapis.com/LATEST_RELEASE_{ver.split('.')[0]}")
-    new_driver_version = page.text
+chrome = get_driver(f"{CURR_DIR}/chromedriver", CURR_DIR)
+chrome.get("https://www.ozbargain.com.au")
 
-    if "NoSuchkey" in new_driver_version:
-        print("Newer version of chromedriver has not been made yet")
+deals = chrome.find_elements_by_class_name("node-ozbdeal")
 
-    elif new_driver_version == os.getenv("DRIVER_VER"):
-        print("Driver already up to date")
+scraped = []
+for deal in deals:
+    title = deal.find_elements_by_class_name("title")[0].text
 
-    else:
-        # Found a new version to download
-        print(f"Newer version of chromedriver exists: {new_driver_version}")
-        print(f"Attempting to update to newer version of chromedriver")
+    if True in map(lambda x: x in title, ignore):
+        continue
+    
+    #TODO: Expand the description by going to the actual link and scraping the description from link 
+    descr = deal.find_elements_by_class_name("content")[0].find_elements_by_tag_name("p")[0].text
+    # link = deal.find_elements_by_class_name("submitted")[0].find_elements_by_class_name("via")[0]
+    print(title, descr)
+    print("\n\n\n")
+    scraped.append((title, descr))
 
-        # Download and unzip new version of chromedriver
-        driver_url = f"https://chromedriver.storage.googleapis.com/{new_driver_version}/chromedriver_mac64.zip"
-        driver_download_page = requests.get(driver_url)
-        zip_file = ZipFile(io.BytesIO(driver_download_page.content))
-        zip_file.extract("chromedriver", CURR_DIR)
+df = pd.DataFrame(scraped, columns=["title", "descr"])
+df.to_csv(f"{os.getenv('ROOT')}/history/seen.csv")
+
+
+# Makes the driver scroll to bottom of the page. 
+# chrome.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+chrome.quit()
+
+
+
